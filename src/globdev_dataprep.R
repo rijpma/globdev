@@ -82,6 +82,13 @@ clio[ccode == 729, iso3c := "SDN"]
 clio = clio[ccode != 736]
 
 clio = oecdregions[, list(ccode = as.numeric(ccode), region)][clio, on = 'ccode']
+clio = devgroups[, list(devgroup = by_point, ccode)][clio, on = 'ccode']
+
+# to make logs possible
+clio[, polity2 := polity2 + 11]
+clio[, so2emis_pc := so2emis_pc * 1000] # so the unit of analysis becomes kg per
+# clio[, co2emis_pc := co2emis_pc * 1000] # data range ok, leave, is ton per year
+clio[, biodiv := biodiv * 100]
 
 clio[, .N, by = ccode][, unique(N)]
 clio[, .N, by = year][, unique(N)]
@@ -107,12 +114,12 @@ data.table::fwrite(clio, "dat/clioannual.csv")
 # dev.off()
 
 # aggregate to 5yearly data
-clio5 = Reduce(function(...) merge(..., all = TRUE, by = c("ccode", "y5", "region")),
+clio5 = Reduce(function(...) merge(..., all = TRUE, by = c("ccode", "y5", "region", "devgroup")),
     # list(da[, lapply(.SD, mean, na.rm = T), .SDcols = c("gdp", "lab", "cra", "hom", "bio", "lif", "hgt") , by = list(y5, ccode)],
-    list(clio[, lapply(.SD, mean, na.rm = T), .SDcols = c("real_wage", "homicide_rate", "lifexp", "stature") , by = list(y5, ccode, region)],
-        clio[year == y5, list(gdppc2011, avedu, polity2, population, co2emis_pc, so2emis_pc, biodiv, ccode, y5, region)], 
-        clio[y5 != 1930, list(gini, region, ccode, y5 = ifelse(year == 1929, 1930, y5), year = ifelse(year == 1929, 1930, year))][
-            year == y5, list(ccode, region, y5, gini)]))
+    list(clio[, lapply(.SD, mean, na.rm = T), .SDcols = c("real_wage", "homicide_rate", "lifexp", "stature") , by = list(y5, ccode, region, devgroup)],
+        clio[year == y5, list(gdppc2011, avedu, polity2, population, co2emis_pc, so2emis_pc, biodiv, ccode, y5, region, devgroup)], 
+        clio[y5 != 1930, list(gini, region, devgroup, ccode, y5 = ifelse(year == 1929, 1930, y5), year = ifelse(year == 1929, 1930, year))][
+            year == y5, list(ccode, region, devgroup, y5, gini)]))
 
 clio5 = clio5[CJ(ccode = unique(clio$ccode), y5 = unique(clio$y5)), on = c('ccode', 'y5')]
 
