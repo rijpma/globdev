@@ -5,7 +5,8 @@ library("ggplot2")
 
 source("src/globdev_functions.R")
 
-vrbs = c("gdppc2011", "lifexp", "polity2", "avedu", "stature", "gini", "real_wage", "homicide_rate", "so2emis_pc") #, "co2emis_pc", "biodiv")
+vrbs = c("gdppc2011", "lifexp", "polity2", "avedu", "stature",
+    "gini", "real_wage", "homicide_rate", "so2emis_pc") #, "co2emis_pc", "biodiv")
 
 clio = data.table::fread("dat/clioannual.csv")
 clio5 = data.table::fread("dat/clio5y.csv")
@@ -28,6 +29,63 @@ africa = c("ZAF", "KEN", "NGA", "GHA", "UGA", "BFA") # , "BWA", "AGO", "TZA", "B
 asia = c("CHN", "IND", "IDN", "PHL", "VNM", "THA")
 easteu = c("RUS", "POL", "HUN", "ROU", "BGR", "EST")
 regionlist = list(latam = latam, africa = africa, asia = asia, easteu = easteu) #, early = early_indus, late = late_indus)
+
+fullnames = paste0(lngvrbs, '\n(', msrunits, ")")
+names(fullnames) = names(lngvrbs)
+
+pdf("out/predpanels_current_indus.pdf", height = 10, width = 9)
+vrbs_currentindus = c("lifexp", "polity2", "avedu", "gini",
+                      "real_wage", "homicide_rate")
+for (ctrs in regionlist){
+    x = melt(clio5[iso3c %in% ctrs & y5 >= 1950], id.vars = c("y5", "iso3c"), measure.vars = c(vrbs_currentindus, paste0(vrbs_currentindus, '_predicted_loglin')))
+    x[, predicted := ifelse(grepl("_predicted_loglin", variable), "predicted", "actual")]
+    x[, variable := gsub("_predicted_loglin", "", variable)]
+
+    plt = ggplot(na.omit(x)) +
+        geom_line(aes(y5, value, col = predicted)) +
+        geom_point(aes(y5, value, col = predicted, alpha = predicted), size = 0.9) +
+        facet_grid(variable ~ iso3c, scales = 'free_y',
+            labeller = labeller(.rows = fullnames), switch = 'y') + # only works in this orientation, facet_wrap otherwise
+        scale_x_continuous(breaks = c(1950, 2000)) +
+        theme_bw() +
+        labs(y = "", x = 'year') +
+        scale_colour_manual(values = c(1, blue)) +
+        scale_alpha_manual(values=c(1, 0)) +
+        theme(legend.position = "bottom",
+            strip.background = element_blank(),
+            strip.placement = "outside",
+            legend.title = element_blank(),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank())
+    print(plt)
+}
+dev.off()
+
+x = melt(clio5[iso3c %in% c(early_indus, late_indus) & y5 >= 1820],
+    id.vars = c("y5", "iso3c"),
+    measure.vars = c(vrbs[-1], paste0(vrbs[-1], '_predicted_loglin')))
+x[, predicted := ifelse(grepl("_predicted_loglin", variable), "predicted", "actual")]
+x[, variable := gsub("_predicted_loglin", "", variable)]
+
+pdf("out/predpanels_early_indus.pdf", height = 11, width = 8.27)
+ggplot(na.omit(x)) +
+    geom_line(aes(y5, value, col = predicted)) +
+    geom_point(aes(y5, value, col = predicted, alpha = predicted), size = 0.9) +
+    facet_grid(variable ~ iso3c, scales = 'free_y',
+        labeller = labeller(.rows = fullnames), switch = 'y') +
+    scale_x_continuous(breaks = c(1820, 2000)) +
+    theme_bw() +
+    labs(y = "", x = 'year') +
+    scale_colour_manual(values = c(1, blue)) +
+    scale_alpha_manual(values=c(1, 0)) +
+    theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        strip.background = element_blank(),
+        strip.placement = "outside",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+dev.off()
+
 
 x = data.table::melt(clio5[y5 >= 1950], id.vars = c("y5", "iso3c", "region"), measure.vars = vrbs[-1])
 ggplot(na.omit(x)) + 
@@ -86,49 +144,4 @@ for (ctrs in list(latam, asia, africa, easteu, c(early_indus, late_indus))){
             panel.grid.minor = element_blank())
     print(plt)
 }
-dev.off()
-
-pdf("out/predpanels_current_indus.pdf", height = 11, width = 9)
-vrbs_currentindus = c("lifexp", "polity2", "avedu", "gini", 
-                      "real_wage", "homicide_rate")
-for (ctrs in regionlist){
-    x = melt(clio5[iso3c %in% ctrs & y5 >= 1950], id.vars = c("y5", "iso3c"), measure.vars = c(vrbs_currentindus, paste0(vrbs_currentindus, '_predicted_loglin')))
-    x[, predicted := ifelse(grepl("_predicted_loglin", variable), "predicted", "actual")]
-    x[, variable := gsub("_predicted_loglin", "", variable)]
-
-    plt = ggplot(na.omit(x)) + 
-        geom_line(aes(y5, value, col = predicted)) + 
-        geom_point(aes(y5, value, col = predicted, alpha = predicted), size = 0.9) + 
-        facet_grid(variable ~ iso3c, scales = 'free_y') + # only works in this orientation, facet_wrap otherwise
-        scale_x_continuous(breaks = c(1950, 2000)) + 
-        theme_bw() +
-        scale_colour_manual(values = c(1, blue)) + 
-        scale_alpha_manual(values=c(1, 0)) + 
-        theme(legend.position = "bottom", 
-            legend.title = element_blank(), 
-            panel.grid.major = element_blank(), 
-            panel.grid.minor = element_blank())
-    print(plt)
-}
-dev.off()
-
-x = melt(clio5[iso3c %in% c(early_indus, late_indus) & y5 >= 1820], 
-    id.vars = c("y5", "iso3c"), 
-    measure.vars = c(vrbs[-1], paste0(vrbs[-1], '_predicted_loglin')))
-x[, predicted := ifelse(grepl("_predicted_loglin", variable), "predicted", "actual")]
-x[, variable := gsub("_predicted_loglin", "", variable)]
-
-pdf("out/predpanels_early_indus.pdf", height = 11.69, width = 8.27)
-ggplot(na.omit(x)) + 
-    geom_line(aes(y5, value, col = predicted)) + 
-    geom_point(aes(y5, value, col = predicted, alpha = predicted), size = 0.9) + 
-    facet_grid(variable ~ iso3c, scales = 'free_y') +
-    scale_x_continuous(breaks = c(1820, 2000)) + 
-    theme_bw() +
-    scale_colour_manual(values = c(1, blue)) + 
-    scale_alpha_manual(values=c(1, 0)) + 
-    theme(legend.position = "bottom", 
-        legend.title = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank())
 dev.off()
