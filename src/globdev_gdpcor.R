@@ -31,12 +31,24 @@ ggplot(na.omit(toplot[!(variable == "avedu" & y5 < 1870)])) +
     facet_wrap( ~ variable, nrow = 2, labeller = labeller(variable = lngvrbs)) + 
     theme_bw() + 
     scale_x_continuous(name = "year") + 
-    scale_y_continuous(name = "pearson cor. coef.") + 
+    scale_y_continuous(name = "Pearson cor. coef.") + 
     scale_size_manual(values = c(0.5, 1, 0.5)) + 
     geom_hline(yintercept = 0, col = 'gray') + 
     theme(legend.position = "none", 
-      strip.background = element_rect(fill = NA),
+      strip.background = element_blank(),
       legend.title = element_blank(), 
           panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank())
 dev.off()
+
+# pdf("out/correlations_overtime.pdf", width = 11, height = 6)
+# par(mfrow = c(2, 4), font.main = 1, mar = mar)
+# for (vrb in vrbs){
+#     plot(range(clio5$y5), c(-1, 1), type = 'n',
+#         xlab = 'year', ylab = 'Pearson cor. coef.')
+#     lines(get(vrb) ~ y5, data = pointcor[!is.na(get(vrb))], col = blue, lwd = 1.5)
+#     lines(get(vrb) ~ y5, data = locors[!is.na(get(vrb))], col = lightblue, lwd = 1)
+#     lines(get(vrb) ~ y5, data = upcors[!is.na(get(vrb))], col = lightblue, lwd = 1)
+#     title(main = lngvrbs[vrb], line = -0.8)
+# }
+# dev.off()
