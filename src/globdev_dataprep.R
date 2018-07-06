@@ -4,14 +4,7 @@ library("data.table")
 library("readxl")
 library("countrycode")
 
-# x = data.table::fread("/Users/auke/Dropbox/family and gender paper/oecd datasets+synthax/lotoflifexp.csv")
-
-devctrs = c(chile = 152, argentina = 32, brazil = 76, bolivia = 68, 
-    equador = 218, south_africa = 710, botswana = 72, namibia = 516, 
-    china = 156,  india = 356, indonesia = 360, thailand = 764,
-    malaysia = 458, vietnam = 704, sri_lanka = 144,
-    russia = 643, soviet_union = 810, poland = 616, ukraine = 804, 
-    latvia = 428, estonia = 233, lithuania = 440)
+source("src/globdev_functions.R")
 
 oecdregions = data.table::fread("dat/oecdregions.csv")
 
@@ -100,8 +93,7 @@ clio[, decade := trunc(year / datafreq) * datafreq]
 
 data.table::fwrite(clio, "dat/clioannual.csv")
 
-# clio only has decennial population data
-# and nothing post 2000
+# clio only has decennial population data <= 2000
 # potential fix
 # wbpop = jsonlite::fromJSON("http://api.worldbank.org/v2/countries/all/indicators/SP.POP.TOTL?per_page=25000&format=json", flatten = TRUE)
 # wbpop = as.data.table(wbpop[[2]])

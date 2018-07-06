@@ -45,7 +45,7 @@ years = lapply(yci, function(x) as.numeric(stringi::stri_extract_last_regex(rown
 # pdf("out/unexplained_byvar.pdf", width = 10, height = 6)
 par(mfrow = c(2, 4))
 for (nm in vrbs[c(2:9)]){
-    matplot(years[[nm]], yci[[nm]], 
+    matplot(years[[nm]], yci[[nm]],
         type = 'l', lty = 2, main = nm, pch = 1,
         xlab = 'year', ylab = 'stand. residual', xlim = c(1820, 2010), col = blue)
     lines(years[[nm]], ypo[[nm]], type = 'l', main = nm, col = blue)
@@ -60,7 +60,7 @@ modlist = list()
 modlist[['real_wage']] = brms::brm(scale(real_wage) ~ log(gdppc2011 - 500) + (1 | groupXtime), data = clio5, chains = 3)
 # matplot(ranef(modlist[['real_wage']])$groupXtime[, 3:4, ])
 
-modlist[["lifexp"]] = update(modlist[['real_wage']], 
+modlist[["lifexp"]] = update(modlist[['real_wage']],
     formula. = scale(lifexp)      ~ ., newdata = clio5[gdppc2011 != 500], chains = 3)
 modlist[["stature"]] = update(modlist[['real_wage']], 
     formula. = scale(stature)   ~ ., newdata = clio5[y5 <= 1980], chains = 3)

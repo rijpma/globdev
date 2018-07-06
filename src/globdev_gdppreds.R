@@ -2,10 +2,12 @@ setwd("~/dropbox/globdev/")
 
 library("data.table")
 library("ggplot2")
+library("writexl")
+library("stringi")
 
 source("src/globdev_functions.R")
 
-vrbs = c("gdppc2011", "lifexp", "polity2", "avedu", "stature",
+vrbs = c("lifexp", "polity2", "avedu", "stature",
     "gini", "real_wage", "homicide_rate", "so2emis_pc") #, "co2emis_pc", "biodiv")
 
 clio = data.table::fread("dat/clioannual.csv")
@@ -18,8 +20,8 @@ clio5 = data.table::fread("dat/clio5y.csv")
 clio5 = unique(clio[, list(ccode, iso3c)])[clio5, on = 'ccode']
 
 # ideally subset the dataset you do the predictions on...
-clio5[, paste0(vrbs[-1], '_predicted_loglin') := lapply(.SD, function(x) predict(lm(x ~ log(gdppc2011)), newdata = data.frame(x = x))), .SDcols = vrbs[-1]]
-# clio5[, paste0(vrbs[-1], '_predicted_loglog') := lapply(.SD, function(x) exp(predict(lm(log1p(x) ~ log(gdppc2011)), newdata = data.frame(x = x)))), .SDcols = vrbs[-1]]
+clio5[, paste0(vrbs, '_predicted_loglin') := lapply(.SD, function(x) predict(lm(x ~ log(gdppc2011)), newdata = data.frame(x = x))), .SDcols = vrbs]
+# clio5[, paste0(vrbs, '_predicted_loglog') := lapply(.SD, function(x) exp(predict(lm(log1p(x) ~ log(gdppc2011)), newdata = data.frame(x = x)))), .SDcols = vrbs]
 
 # country groups for plots
 early_indus = c("GBR", "USA", "DEU", "FRA")
@@ -33,11 +35,13 @@ regionlist = list(latam = latam, africa = africa, asia = asia, easteu = easteu) 
 fullnames = paste0(lngvrbs, '\n(', msrunits, ")")
 names(fullnames) = names(lngvrbs)
 
+outlist = list()
+
 pdf("out/predpanels_current_indus.pdf", height = 10, width = 9)
 vrbs_currentindus = c("lifexp", "polity2", "avedu", "gini",
                       "real_wage", "homicide_rate")
-for (ctrs in regionlist){
-    x = melt(clio5[iso3c %in% ctrs & y5 >= 1950], id.vars = c("y5", "iso3c"), measure.vars = c(vrbs_currentindus, paste0(vrbs_currentindus, '_predicted_loglin')))
+for (rgn in names(regionlist)){
+    x = melt(clio5[iso3c %in% regionlist[[rgn]] & y5 >= 1950], id.vars = c("y5", "iso3c"), measure.vars = c(vrbs_currentindus, paste0(vrbs_currentindus, '_predicted_loglin')))
     x[, predicted := ifelse(grepl("_predicted_loglin", variable), "predicted", "actual")]
     x[, variable := gsub("_predicted_loglin", "", variable)]
 
@@ -58,12 +62,18 @@ for (ctrs in regionlist){
             panel.grid.major = element_blank(),
             panel.grid.minor = element_blank())
     print(plt)
+    outlist[[rgn]] = data.table::dcast(x, iso3c + y5~ ...)
 }
 dev.off()
 
+writexl::write_xlsx(outlist, path = 'out/gdppreds_current.xlsx')
+
+writexl::write_xlsx(clio5[iso3c %in% c(early_indus, late_indus) & y5 >= 1820],
+    path = "out/gdppred_earlyindus.xlsx")
+
 x = melt(clio5[iso3c %in% c(early_indus, late_indus) & y5 >= 1820],
     id.vars = c("y5", "iso3c"),
-    measure.vars = c(vrbs[-1], paste0(vrbs[-1], '_predicted_loglin')))
+    measure.vars = c(vrbs, paste0(vrbs, '_predicted_loglin')))
 x[, predicted := ifelse(grepl("_predicted_loglin", variable), "predicted", "actual")]
 x[, variable := gsub("_predicted_loglin", "", variable)]
 
@@ -87,7 +97,7 @@ ggplot(na.omit(x)) +
 dev.off()
 
 
-x = data.table::melt(clio5[y5 >= 1950], id.vars = c("y5", "iso3c", "region"), measure.vars = vrbs[-1])
+x = data.table::melt(clio5[y5 >= 1950], id.vars = c("y5", "iso3c", "region"), measure.vars = vrbs)
 ggplot(na.omit(x)) + 
     geom_line(aes(y5, value, col = iso3c == "ZAF", group = iso3c)) + 
     facet_wrap( ~ variable, scales = 'free')
@@ -97,8 +107,8 @@ clio5[!is.na(lifexp), list(y5, reduction = lifexp - shift(lifexp)), by = iso3c][
 
 # regional means
 x = data.table::melt(
-        clio5[y5 >= 1950, lapply(.SD, mean, na.rm = T), .SDcols = vrbs[-1], by = list(region, y5)]
-        , id.vars = c("y5", "region"), measure.vars = vrbs[-1])
+        clio5[y5 >= 1950, lapply(.SD, mean, na.rm = T), .SDcols = vrbs, by = list(region, y5)]
+        , id.vars = c("y5", "region"), measure.vars = vrbs)
 ggplot(na.omit(x)) + 
     geom_line(aes(y5, value, col = region, group = region)) + 
     facet_wrap( ~ variable, scales = 'free')
@@ -126,7 +136,7 @@ dev.off()
 
 pdf("out/predpanels_all_sketch.pdf", height = 11.69, width = 8.27)
 for (ctrs in list(latam, asia, africa, easteu, c(early_indus, late_indus))){
-    x = melt(clio5[iso3c %in% ctrs], id.vars = c("y5", "iso3c"), measure.vars = c(vrbs[-1], paste0(vrbs[-1], '_predicted_loglin')))
+    x = melt(clio5[iso3c %in% ctrs], id.vars = c("y5", "iso3c"), measure.vars = c(vrbs, paste0(vrbs, '_predicted_loglin')))
     x[, predicted := ifelse(grepl("_predicted_loglin", variable), "predicted", "actual")]
     x[, variable := gsub("_predicted_loglin", "", variable)]
 
