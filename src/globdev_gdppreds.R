@@ -4,6 +4,7 @@ library("data.table")
 library("ggplot2")
 library("writexl")
 library("stringi")
+library("countrycode")
 
 source("src/globdev_functions.R")
 
@@ -12,6 +13,7 @@ vrbs = c("lifexp", "polity2", "avedu", "stature",
 
 clio = data.table::fread("dat/clioannual.csv")
 clio5 = data.table::fread("dat/clio5y.csv")
+clio5[, country := countrycode::countrycode(iso3c, "iso3c", "p4.name")]
 
 # clio5[, polity2 := polity2 + 11]
 # clio[, polity2 := polity2 + 11]
@@ -32,6 +34,9 @@ asia = c("CHN", "IND", "IDN", "PHL", "VNM", "THA")
 easteu = c("RUS", "POL", "HUN", "ROU", "BGR", "EST")
 regionlist = list(latam = latam, africa = africa, asia = asia, easteu = easteu) #, early = early_indus, late = late_indus)
 
+nameslist = unlist(lapply(regionlist, countrycode::countrycode, 'iso3c', 'p4.name'))
+names(nameslist) = unlist(regionlist)
+
 fullnames = paste0(lngvrbs, '\n(', msrunits, ")")
 names(fullnames) = names(lngvrbs)
 
@@ -49,7 +54,8 @@ for (rgn in names(regionlist)){
         geom_line(aes(y5, value, col = predicted)) +
         geom_point(aes(y5, value, col = predicted, alpha = predicted), size = 0.9) +
         facet_grid(variable ~ iso3c, scales = 'free_y',
-            labeller = labeller(.rows = fullnames), switch = 'y') + # only works in this orientation, facet_wrap otherwise
+            labeller = labeller(.rows = fullnames, .cols = nameslist), 
+            switch = 'y') + # only works in this orientation, facet_wrap otherwise
         scale_x_continuous(breaks = c(1950, 2000)) +
         theme_bw() +
         labs(y = "", x = 'year') +
@@ -77,12 +83,16 @@ x = melt(clio5[iso3c %in% c(early_indus, late_indus) & y5 >= 1820],
 x[, predicted := ifelse(grepl("_predicted_loglin", variable), "predicted", "actual")]
 x[, variable := gsub("_predicted_loglin", "", variable)]
 
+nameslist = countrycode::countrycode(c(early_indus, late_indus), 'iso3c', "p4.name")
+names(nameslist) = c(early_indus, late_indus)
+
 pdf("out/predpanels_early_indus.pdf", height = 11, width = 8.27)
 ggplot(na.omit(x)) +
     geom_line(aes(y5, value, col = predicted)) +
     geom_point(aes(y5, value, col = predicted, alpha = predicted), size = 0.9) +
     facet_grid(variable ~ iso3c, scales = 'free_y',
-        labeller = labeller(.rows = fullnames), switch = 'y') +
+        labeller = labeller(.rows = fullnames, .cols = nameslist), 
+        switch = 'y') +
     scale_x_continuous(breaks = c(1820, 2000)) +
     theme_bw() +
     labs(y = "", x = 'year') +
