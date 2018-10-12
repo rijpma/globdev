@@ -21,7 +21,7 @@ for (nm in vrbs){
     for (grp in unique(allgroups$group)){
         onegroup = allgroups[allgroups$group == grp, ]
         matplot(allgroups$year, allgroups[, 3:5], type = 'n', main = paste(nm, grp, sep = ', '),
-            xlab = 'year', ylab = 'residual', xlim = c(1820, 2010))
+            xlab = 'year', ylab = '', xlim = c(1820, 2010))
         # for (grp in unique(allgroups$group)) lines(allgroups[allgroups$group == grp, 'year'], allgroups[allgroups$group == grp, '50%ile'], col = 'lightgray')
         abline(h = 0, col = 'gray')
         matlines(onegroup$year, onegroup[, 3:5],
@@ -42,7 +42,7 @@ for (nm in vrbs){
     matplot(rownames(relist[[nm]]), relist[[nm]],
         type = 'l', col = blue, lwd = c(1, 2, 1), lty = 1,
         main = lngvrbs[nm],
-        xlab = 'year', ylab = 'residual', xlim = c(1820, 2010))
+        xlab = 'year', ylab = '', xlim = c(1820, 2010))
     abline(h = 0, col = 'gray')
 }
 dev.off()
